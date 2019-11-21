@@ -12,7 +12,9 @@
 - DOLGOVD,THRUNS,MONTEMERLOM,etal.Pathplanningforautonomousvehiclesin unknown semi-structured environments[J]. The International Journal of Robotics Research, 2010, 29(5):485-501.
 - 齐尧, 徐友春, 李华, 等. 一种基于改进混合 A* 的智能车路径规划算法[J]. 军事交通学院学报, 2018(2018 年 08):85-90.
 
+
 **注**： 
+- 文件夹`EwingKang-Dubins-Curve-For-MATLAB`提供了一份入门Hybrid A*算法的Matlab程序
 - 注释主要分布在`include`和`src`文件夹的文件内
 - 若有错误请在issue里提出，会尽快更正
 
