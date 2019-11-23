@@ -173,7 +173,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
       O.pop();//并从open set中移除 (先取出点来，再干活)
 
       // _________
-      // GOAL TEST
+      // GOAL TEST检测当前节点是否是终点或者是否超出了解算最大时间
       if (*nPred == goal || iterations > Constants::iterations) {
         // DEBUG
         return nPred;
@@ -197,21 +197,27 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
         // SEARCH WITH FORWARD SIMULATION
         for (int i = 0; i < dir; i++) {//每个方向都搜索
           // create possible successor
+          // 创建下一个扩展节点，这里有三种可能的方向，如果可以倒车的话是6种方向
           nSucc = nPred->createSuccessor(i);//找到下一个点
           // set index of the successor
+          // 设置节点遍历标识
           iSucc = nSucc->setIdx(width, height);//索引值
 
           // ensure successor is on grid and traversable：确保是在有效范围内
+          // 判断扩展节点是否满足约束，能否进行遍历
           if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc)) {
 
             // ensure successor is not on closed list or it has the same index as the predecessor
+            // 确定新扩展的节点不在close list中，或者没有在之前遍历过
             if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
 
               // calculate new G value：更新cost-so-far
+              // 更新G值
               nSucc->updateG();
               newG = nSucc->getG();
 
               // if successor not on open list or found a shorter way to the cell
+              // 如果扩展节点不在OPEN LIST中，或者找到了更短G值的路径
               if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
                 // calculate H value:更新cost-to-go
@@ -267,6 +273,7 @@ float aStar(Node2D& start,
   float newG;
 
   // reset the open and closed list
+  // 将open list和close list重置
   for (int i = 0; i < width * height; ++i) {
     nodes2D[i].reset();
   }
@@ -275,7 +282,7 @@ float aStar(Node2D& start,
   ros::Duration d(0.001);
 
   boost::heap::binomial_heap<Node2D*,
-        boost::heap::compare<CompareNodes>> O;
+        boost::heap::compare<CompareNodes>> O;//Open list, 注意是一个heap
   // update h value
   start.updateH(goal);
   // mark start as open
@@ -292,23 +299,23 @@ float aStar(Node2D& start,
   // continue until O empty
   while (!O.empty()) {
     // pop node with lowest cost from priority queue
-    nPred = O.top();
+    nPred = O.top();//从Open集合中找出代价最低的元素
     // set index
-    iPred = nPred->setIdx(width);
+    iPred = nPred->setIdx(width);//相应的index
 
     // _____________________________
     // LAZY DELETION of rewired node
     // if there exists a pointer this node has already been expanded
-    if (nodes2D[iPred].isClosed()) {
+    if (nodes2D[iPred].isClosed()) {//检查：如果已扩展，则从open set中移除，处理下一个
       // pop node from the open list and start with a fresh node
       O.pop();
       continue;
     }
     // _________________
     // EXPANSION OF NODE
-    else if (nodes2D[iPred].isOpen()) {
+    else if (nodes2D[iPred].isOpen()) {//没有进行扩展
       // add node to closed list
-      nodes2D[iPred].close();
+      nodes2D[iPred].close();//标记为close
       nodes2D[iPred].discover();
 
       // RViz visualization
@@ -324,14 +331,14 @@ float aStar(Node2D& start,
       // _________
       // GOAL TEST
       if (*nPred == goal) {
-        return nPred->getG();
+        return nPred->getG();//返回G值
       }
       // ____________________
       // CONTINUE WITH SEARCH
-      else {
+      else {//非目标点，则从可能的方向寻找
         // _______________________________
         // CREATE POSSIBLE SUCCESSOR NODES
-        for (int i = 0; i < Node2D::dir; i++) {
+        for (int i = 0; i < Node2D::dir; i++) {//A*算法是8个方向：4个正方向和4个45度的方向
           // create possible successor
           nSucc = nPred->createSuccessor(i);
           // set index of the successor
@@ -340,17 +347,20 @@ float aStar(Node2D& start,
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
+          // 约束性检查：在有效网格范围内、且不是障碍、没有扩展过
           if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
+            //更新G值
             nSucc->updateG();
             newG = nSucc->getG();
 
             // if successor not on open list or g value lower than before put it on open list
+            // 如果子节点并在open集中，或者它的G值比之前要小，则为可行的方向
             if (!nodes2D[iSucc].isOpen() || newG < nodes2D[iSucc].getG()) {
               // calculate the H value
-              nSucc->updateH(goal);
+              nSucc->updateH(goal);//计算H值
               // put successor on open list
-              nSucc->open();
+              nSucc->open();//将该点移到open set中
               nodes2D[iSucc] = *nSucc;
               O.push(&nodes2D[iSucc]);
               delete nSucc;

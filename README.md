@@ -16,7 +16,7 @@
 **注**： 
 - 文件夹`EwingKang-Dubins-Curve-For-MATLAB`提供了一份入门Hybrid A*算法的Matlab程序
 - 注释主要分布在`include`和`src`文件夹的文件内
-- 若有错误请在issue里提出，会尽快更正
+- 若有错误请在[Issues](https://github.com/teddyluo/hybrid-a-star-annotation/issues)里提出，会尽快更正
 
 ---
 
