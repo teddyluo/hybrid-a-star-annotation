@@ -6,7 +6,7 @@
 注释依据的主要参考文献有：
 
 - DOLGOV D, THRUN S, MONTEMERLO M, et al. Practical search techniques in path planning for autonomous driving[J]. Ann Arbor, 2008, 1001(48105):18-80.
-- KURZERK.PathPlanninginUnstructuredEnvironments:AReal-timeHybridA*Implementation for Fast and Deterministic Path Generation for the KTH Research Concept Vehicle[Z].2016.
+- KURZERK.Path Planning in Unstructured Environments: AReal-timeHybridA*Implementation for Fast and Deterministic Path Generation for the KTH Research Concept Vehicle[Z].2016.
 - OK K, ANSARI S, GALLAGHER B, et al. Path planning with uncertainty: Voronoi uncertainty fields[C]//2013 IEEE International Conference on Robotics and Automation. 2013:4596-4601.
 - DOLGOV D, THRUN S. Autonomous driving in semi-structured environments: Mapping and planning[C]//2009 IEEE International Conference on Robotics and Automation. 2009:3407-3414.
 - DOLGOVD,THRUNS,MONTEMERLOM,etal.Pathplanningforautonomousvehiclesin unknown semi-structured environments[J]. The International Journal of Robotics Research, 2010, 29(5):485-501.
@@ -17,6 +17,18 @@
 - 文件夹`EwingKang-Dubins-Curve-For-MATLAB`提供了一份入门Hybrid A*算法的Matlab程序
 - 注释主要分布在`include`和`src`文件夹的文件内
 - 若有错误请在[Issues](https://github.com/teddyluo/hybrid-a-star-annotation/issues)里提出，会尽快更正
+
+---
+
+**注**：关于运动规划与控制，翻译了一篇综述文献，由于刚入门，错误在所难免，请各位扔个砖头。
+
+翻译的文献为：
+Paden B, Čáp M, Yong S Z, et al. A survey of motion planning and control techniques for self-driving urban vehicles[J]. IEEE Transactions on intelligent vehicles, 2016, 1(1): 33-55.
+
+**翻译项目主页**： 
+
+[https://github.com/teddyluo/motion-planning-chs](https://github.com/teddyluo/motion-planning-chs)
+
 
 ---
 
