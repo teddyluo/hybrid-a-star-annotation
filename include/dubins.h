@@ -67,7 +67,16 @@ typedef struct
  * @note the user_data parameter is forwarded from the caller
  * @note return non-zero to denote sampling should be stopped
  */
+
+/**
+ * @brief 回调函数:
+ *    q：一个构型(configuration)
+ *    t：路径长度
+ *    user_data：传递的数据
+ * 
+ */
 typedef int (*DubinsPathSamplingCallback)(double q[3], double t, void* user_data);
+
 
 /**
  * Generate a path from an initial configuration to
@@ -83,12 +92,28 @@ typedef int (*DubinsPathSamplingCallback)(double q[3], double t, void* user_data
  * @param path  - the resultant path
  * @return      - non-zero on error
  */
+
+/**
+ * @brief 从初始构型q0构建一条到q1的dubins路径，最大转向半径为rho
+ * 
+ * @param q0 起点
+ * @param q1 目标点
+ * @param rho 转向半径
+ * @param path  构建的路径点
+ * @return int 返回值：非0表示出错；0表示正常
+ */
 int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path);
 
 /**
  * Calculate the length of an initialised path
  *
  * @param path - the path to find the length of
+ */
+/**
+ * @brief 计算一条经过初始化计算的路径的长度
+ * 
+ * @param path 经过dubins_init()函数计算出来的路径点
+ * @return double 返回值表示该路径的长度
  */
 double dubins_path_length( DubinsPath* path );
 
@@ -97,6 +122,12 @@ double dubins_path_length( DubinsPath* path );
  *
  * @param path    - an initialised path
  * @return        - one of LSL, LSR, RSL, RSR, RLR or LRL (ie/ 0-5 inclusive)
+ */
+/**
+ * @brief 计算一段路径的类型
+ * 
+ * @param path：路径点
+ * @return int：路径类型，整数表示LSL, LSR, RSL, RSR, RLR or LRL(用整数0-5之一表示结果)
  */
 int dubins_path_type( DubinsPath * path );
 
@@ -107,6 +138,15 @@ int dubins_path_type( DubinsPath * path );
  * @param t    - a length measure, where 0 <= t < dubins_path_length(path)
  * @param q    - the configuration result
  * @returns    - non-zero if 't' is not in the correct range
+ */
+
+/**
+ * @brief 使用参数t计算沿路径path的构型
+ * 
+ * @param path 路径点
+ * @param t: 长度单位，范围为 0 <= t <= dubins_path_length(path)
+ * @param q: 计算结果
+ * @return int： 返回值，非0值表示出错，0表示正常
  */
 int dubins_path_sample( DubinsPath* path, double t, double q[3]);
 
@@ -119,6 +159,15 @@ int dubins_path_sample( DubinsPath* path, double t, double q[3]);
  * @param user_data - optional information to pass on to the callback
  * @param stepSize  - the distance along the path for subsequent samples
  */
+/**
+ * @brief 用固定步长在路径path进行遍历，每个区间调用回调函数callback一次
+ * 
+ * @param path 路径
+ * @param cb 回调函数
+ * @param stepSize 步长
+ * @param user_data 用户数据，用于交换数据
+ * @return int 返回值：非0表示出错；0表示正常
+ */
 int dubins_path_sample_many( DubinsPath* path, DubinsPathSamplingCallback cb, double stepSize, void* user_data );
 
 /**
@@ -126,6 +175,14 @@ int dubins_path_sample_many( DubinsPath* path, DubinsPathSamplingCallback cb, do
  *
  * @param path - an initialised path
  * @param q    - the configuration result
+ */
+
+/**
+ * @brief 用于提取路径的终点
+ * 
+ * @param path 路径
+ * @param q 提取的终点
+ * @return int 返回值：非0表示出错；0表示正常
  */
 int dubins_path_endpoint( DubinsPath* path, double q[3] );
 
@@ -136,9 +193,19 @@ int dubins_path_endpoint( DubinsPath* path, double q[3] );
  * @param t       - a length measure, where 0 < t < dubins_path_length(path)
  * @param newpath - the resultant path
  */
+
+/**
+ * @brief 提取路径的一段子集的函数
+ * 
+ * @param path 给定的路径 
+ * @param t  长度，范围 0 < t < dubins_path_length(path)
+ * @param newpath 提取的子路径
+ * @return int 返回值：非0表示出错；0表示正常
+ */
 int dubins_extract_subpath( DubinsPath* path, double t, DubinsPath* newpath );
 
 // Only exposed for testing purposes
+//构造不同类型的路径的函数
 int dubins_LSL( double alpha, double beta, double d, double* outputs );
 int dubins_RSR( double alpha, double beta, double d, double* outputs );
 int dubins_LSR( double alpha, double beta, double d, double* outputs );

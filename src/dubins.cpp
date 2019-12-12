@@ -52,6 +52,7 @@ const int DIRDATA[][3] = {
     { L_SEG, R_SEG, L_SEG }
 };
 
+//函数指针数组，可以指向不同的函数
 DubinsWord dubins_words[] = {
     dubins_LSL,
     dubins_LSR,
@@ -78,16 +79,35 @@ DubinsWord dubins_words[] = {
  *
  * fmod doesn't behave correctly for angular quantities, this function does
  */
+/**
+ * 取浮点数的小数部分
+ */
 double fmodr( double x, double y)
 {
     return x - y*floor(x/y);
 }
 
+/**
+ * @brief 将角度范围限制在（-2pi, 2*pi）之间
+ * 
+ * @param theta 角度
+ * @return double 计算结果
+ */
 double mod2pi( double theta )
 {
     return fmodr( theta, 2 * M_PI );
 }
 
+/**
+ * @brief 根据alpha, beta, d三个参数找出Dubins类型(LSL, LSR, RSL, RSR, RLR or LRL)
+ *        并将每段曲线的代价存放到path->param和path->type中
+ * 
+ * @param alpha ：角度参数
+ * @param beta ：角度参数
+ * @param d ：两个圆的距离
+ * @param path 存放结果，用到两个: path->param和path->type
+ * @return int 返回值：非0值表示出错；0表示正常
+ */
 int dubins_init_normalised( double alpha, double beta, double d, DubinsPath* path)
 {
     double best_cost = INFINITY;
@@ -97,10 +117,11 @@ int dubins_init_normalised( double alpha, double beta, double d, DubinsPath* pat
     best_word = -1;
     for( i = 0; i < 6; i++ ) {
         double params[3];
+        //分别调用不同的Dubins函数曲线计算得到t,p, q,存放于params
         int err = dubins_words[i](alpha, beta, d, params);
         if(err == EDUBOK) {
-            double cost = params[0] + params[1] + params[2];
-            if(cost < best_cost) {
+            double cost = params[0] + params[1] + params[2];//三段的计算代价
+            if(cost < best_cost) {//将最好的结果保存到path->param看
                 best_word = i;
                 best_cost = cost;
                 path->param[0] = params[0];
@@ -238,6 +259,12 @@ int dubins_LRL( double alpha, double beta, double d, double* outputs )
     return EDUBOK;
 }
 
+/**
+ * @brief 计算路径长度
+ * 
+ * @param path ：三个参数表示角度
+ * @return double ：返回值，表示路径长度
+ */
 double dubins_path_length( DubinsPath* path )
 {
     double length = 0.;
@@ -248,10 +275,24 @@ double dubins_path_length( DubinsPath* path )
     return length;
 }
 
+/**
+ * @brief 返回路径类型
+ * 
+ * @param path 输入：路径
+ * @return int 返回值：路径类型
+ */
 int dubins_path_type( DubinsPath* path ) {
     return path->type;
 }
 
+/**
+ * @brief 计算下一段Dubins路径段的位置
+ * 
+ * @param t 角度 
+ * @param qi 该段起始位置
+ * @param qt 该段终点位置
+ * @param type 路径类型
+ */
 void dubins_segment( double t, double qi[3], double qt[3], int type)
 {
     assert( type == L_SEG || type == S_SEG || type == R_SEG );
@@ -273,6 +314,14 @@ void dubins_segment( double t, double qi[3], double qt[3], int type)
     }
 }
 
+/**
+ * @brief 对一段路径进行采样
+ * 
+ * @param path 输入路径
+ * @param t 路径终点的t
+ * @param q 采样结果
+ * @return int 返回值：非0表示出错，0表示正常
+ */
 int dubins_path_sample( DubinsPath* path, double t, double q[3] )
 {
     if( t < 0 || t >= dubins_path_length(path) ) {
@@ -294,16 +343,21 @@ int dubins_path_sample( DubinsPath* path, double t, double q[3] )
     //      normalise the target configurations angular component
 
     // The translated initial configuration
+    // 将路径放在原点(0, 0)，此时，只需要将角度保留即可
     double qi[3] = { 0, 0, path->qi[2] };
 
     // Generate the target configuration
+    // 生成中间点的构型
     const int* types = DIRDATA[path->type];
-    double p1 = path->param[0];
-    double p2 = path->param[1];
+    double p1 = path->param[0];//路径的第一个角度
+    double p2 = path->param[1];//路径的第二个角度
     double q1[3]; // end-of segment 1
     double q2[3]; // end-of segment 2
+    //从第qi点为起点，根据类型types[0]，生成后一个点q1的configuration
     dubins_segment( p1,      qi,    q1, types[0] );
+    //从第q1点为起点，根据类型types[1]，生成后一个点q2的configuration
     dubins_segment( p2,      q1,    q2, types[1] );
+    //生成q点的configuration
     if( tprime < p1 ) {
         dubins_segment( tprime, qi, q, types[0] );
     }

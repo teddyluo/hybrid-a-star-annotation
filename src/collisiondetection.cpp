@@ -1,3 +1,10 @@
+/**
+ * @file collisiondetection.cpp
+ * @brief 碰撞检测函数集
+ * @date 2019-12-12
+ * 
+ * 
+ */
 #include "collisiondetection.h"
 
 using namespace HybridAStar;

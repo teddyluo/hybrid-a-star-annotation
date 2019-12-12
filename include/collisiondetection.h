@@ -10,6 +10,17 @@
 
 namespace HybridAStar {
 namespace {
+
+  /**
+   * @brief Get the Configuration object of a node: node
+   *        查询给定节点的configure (构型值)，分两种情况：
+   *        - 若为Node2D类，theta分量恒为99
+   *        - 若为Node3D类，theta分量为node的真实值
+   * @param node: 节点指针
+   * @param x 节点node的X分量
+   * @param y 节点node的X分量
+   * @param t 节点node的theta分量
+   */
 void getConfiguration(const Node2D* node, float& x, float& y, float& t) {
   x = node->getX();
   y = node->getY();
