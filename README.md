@@ -3,7 +3,7 @@
 本仓库是Hybrid A* 的ROS版代码注释，原始代码地址为:
 [https://github.com/karlkurzer/path_planner](https://github.com/karlkurzer/path_planner)
 
-注释依据的主要参考文献有：
+整体注释依据的主要参考文献有：
 
 - DOLGOV D, THRUN S, MONTEMERLO M, et al. Practical search techniques in path planning for autonomous driving[J]. Ann Arbor, 2008, 1001(48105):18-80.
 - KURZERK.Path Planning in Unstructured Environments: AReal-timeHybridA*Implementation for Fast and Deterministic Path Generation for the KTH Research Concept Vehicle[Z].2016.
@@ -11,6 +11,14 @@
 - DOLGOV D, THRUN S. Autonomous driving in semi-structured environments: Mapping and planning[C]//2009 IEEE International Conference on Robotics and Automation. 2009:3407-3414.
 - DOLGOVD,THRUNS,MONTEMERLOM,etal.Pathplanningforautonomousvehiclesin unknown semi-structured environments[J]. The International Journal of Robotics Research, 2010, 29(5):485-501.
 - 齐尧, 徐友春, 李华, 等. 一种基于改进混合 A* 的智能车路径规划算法[J]. 军事交通学院学报, 2018(2018 年 08):85-90.
+
+Dubins路径生成参考文献（[源码来源](https://github.com/AndrewWalker/Dubins-Curves)）：
+- Shkel A M, Lumelsky V. Classification of the Dubins set[J]. Robotics and Autonomous Systems, 2001, 34(4): 179-202.
+- Giese A. A Comprehensive, Step-by-Step Tutorial on Computing Dubins’s Curves[J]. 2014.
+- Eriksson-Bique S, Kirkpatrick D, Polishchuk V. Discrete dubins paths[J]. arXiv preprint arXiv:1211.2365, 2012.
+
+Reeds-Shepp曲线参考文献：
+- Reeds J, Shepp L. Optimal paths for a car that goes both forwards and backwards[J]. Pacific journal of mathematics, 1990, 145(2): 367-393.
 
 **附加代码**：
 

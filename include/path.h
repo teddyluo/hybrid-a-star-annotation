@@ -1,3 +1,11 @@
+/**
+ * @file path.h
+ * @brief Path类：提供在ROS RVIZ可视化路径的函数。主要实现了三个函数：
+ *  1) 加入segment（线段）: addSegment()
+ *  2) 加入Node(节点): addNode()
+ *  3) 加入Vehicle（车体）: addVehicle()
+ *  这三个函数通过updatePath进行整合
+ */
 #ifndef PATH_H
 #define PATH_H
 
@@ -63,8 +71,8 @@ class Path {
   */
   void updatePath(std::vector<Node3D> nodePath);
   /*!
-     \brief Adds a segment to the path:给路径增加一个segment
-     \param node a 3D node: node-为3D节点类
+     \brief Adds a segment to the path:给路径增加一段segment（线段）
+     \param node a 3D node: node- 为3D节点类
   */
   void addSegment(const Node3D& node);
   /*!

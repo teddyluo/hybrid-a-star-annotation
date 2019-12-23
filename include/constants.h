@@ -35,7 +35,7 @@ namespace Constants {
 // CONFIG FLAGS
 
 /// A flag for additional debugging output via `std::cout`
-static const bool coutDEBUG = false; //调度开关
+static const bool coutDEBUG = false; //调试开关
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;//true表示静态地图；false表示动态地图
 /// A flag for the visualization of 3D nodes (true = on; false = off)
@@ -91,8 +91,10 @@ static const float cellSize = 1; //在2D网格中cell的大小
   to allow the successor being placed in the same cell.
 */
 /**
- * 目前为止的代价值比未来的代价值更大时，算法应选择前一个而不是后一个。这样会导致successor从不会被放置，
- * 单元格只能扩展一个节点。tieBreaker人为地增加predecessor的代价，允许successor放置在同一个单元中
+ * 如果cost-so-far的启发式值比cost-to-come的启发式值更大时，算法应选择predecessor而不是successor。
+ * 这样会导致successor从不会被选择的情况发生，该单元格永远只能扩展一个节点。tieBreaker可以人为地增加
+ * predecessor的代价，允许successor放置在同一个单元中。它的使用见algorithm.cpp, 
+ *     if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) 
  */
 static const float tieBreaker = 0.01;
 

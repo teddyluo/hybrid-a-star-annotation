@@ -73,7 +73,7 @@ class Node2D {
 
   // UPDATE METHODS
   /// Updates the cost-so-far for the node x' coming from its predecessor. It also discovers the node.
-  // 更新G的值(当前节点的代价)，并将其设置为已控视
+  // 更新G的值(当前节点的代价)，并将其设置为已discovered
   void updateG() { g += movementCost(*pred); d = true; }
   /// Updates the cost-to-go for the node x' to the goal node.
   //更新启发值，即离目标的代价

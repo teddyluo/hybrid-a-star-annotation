@@ -1,3 +1,10 @@
+/**  FILE: dubins.h
+ * @brief Dubins路径生成类，用于生成向前行走的轨迹
+ * 注：Dubins路径是基础中的基础，扩展的Reeds-Shepp路径是Dubins路径的扩展
+ *    Dubins路径遵循车辆运动学约束。这里使用的代码直接采用Andrew Walker编写的Dubins类：
+ *  https://github.com/AndrewWalker/Dubins-Curves/
+ */
+
 /*!
   \file dubins.h
    \brief A dubins path class for finding analytical solutions to the problem of the shortest path.
@@ -94,7 +101,7 @@ typedef int (*DubinsPathSamplingCallback)(double q[3], double t, void* user_data
  */
 
 /**
- * @brief 从初始构型q0构建一条到q1的dubins路径，最大转向半径为rho
+ * @brief 从初始构型(始点)q0构建一条到q1的dubins路径，最大转向半径为rho(单位为米?)
  * 
  * @param q0 起点
  * @param q1 目标点
@@ -110,7 +117,7 @@ int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path);
  * @param path - the path to find the length of
  */
 /**
- * @brief 计算一条经过初始化计算的路径的长度
+ * @brief 计算一条经过初始化阶段（归一化）的路径的长度
  * 
  * @param path 经过dubins_init()函数计算出来的路径点
  * @return double 返回值表示该路径的长度
@@ -141,7 +148,7 @@ int dubins_path_type( DubinsPath * path );
  */
 
 /**
- * @brief 使用参数t计算沿路径path的构型
+ * @brief 使用参数t计算沿路径path的构型（位姿）
  * 
  * @param path 路径点
  * @param t: 长度单位，范围为 0 <= t <= dubins_path_length(path)
@@ -176,7 +183,6 @@ int dubins_path_sample_many( DubinsPath* path, DubinsPathSamplingCallback cb, do
  * @param path - an initialised path
  * @param q    - the configuration result
  */
-
 /**
  * @brief 用于提取路径的终点
  * 
@@ -193,7 +199,6 @@ int dubins_path_endpoint( DubinsPath* path, double q[3] );
  * @param t       - a length measure, where 0 < t < dubins_path_length(path)
  * @param newpath - the resultant path
  */
-
 /**
  * @brief 提取路径的一段子集的函数
  * 

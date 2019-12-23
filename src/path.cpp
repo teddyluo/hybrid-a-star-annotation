@@ -1,10 +1,11 @@
 /**
  * @file path.cpp
- * @brief Path类：提供跟踪、可视化路径类的函数，主要实现了三个函数：
+ * @brief Path类：提供在ROS RVIZ可视化路径的函数。主要实现了三个函数：
  *  1) 加入segment: addSegment
  *  2) 加入Node: addNode
  *  3) 加入Vehicle: addVehicle
  *  这三个函数通过updatePath进行整合
+ * 注：该类主要用于与RVIZ交互
  */
 #include "path.h"
 
@@ -14,8 +15,8 @@ using namespace HybridAStar;
 //###################################################
 //                                         CLEAR PATH
 //###################################################
-//清除路径：将以前的路径位姿点、节点信息、及车辆标记点清除
-//         用空值的节点、车辆标记信息对外进行发布
+//清除路径：清除以前的路径位姿点、节点信息、及车辆标记符
+//         用空值的节点、车辆标记符对外进行发布（当然显示是空白）
 void Path::clear() {
   Node3D node;
   path.poses.clear();
@@ -54,7 +55,7 @@ void Path::clear() {
 //###################################################
 // __________
 // TRACE PATH
-// 对每个3D节点信息，分别进行addSegment、addNode、addVehicle
+// 对每个3D节点信息，分别进行：增加线性addSegment、节点addNode、和车辆标记符addVehicle
 void Path::updatePath(std::vector<Node3D> nodePath) {
   path.header.stamp = ros::Time::now();
   int k = 0;
@@ -70,7 +71,7 @@ void Path::updatePath(std::vector<Node3D> nodePath) {
   return;
 }
 // ___________
-// ADD SEGMENT:将每个node的信息转为geometry_msgs放入向量path中
+// ADD SEGMENT增加线性:将每个node的信息转为geometry_msgs放入向量path中
 void Path::addSegment(const Node3D& node) {
   geometry_msgs::PoseStamped vertex;
   vertex.pose.position.x = node.getX() * Constants::cellSize;

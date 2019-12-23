@@ -4,13 +4,13 @@
  * 输入：
  *      始点、
  *      目标点、
- *      配置空间的3维和2维表示、
+ *      配置空间的3维和2维表示（2D用来A*，3D用于hybrid A*）、
  *      搜索网格的宽度及高度、
- *      配置空间的查找表
- *      Dubins查找表
+ *      配置空间的查找表、
+ *      Dubins查找表（程序实际上没有使用该表，而是直接调用OMPL库计算）、
  *      RVIZ可视化类(用于显示结果)
  * 返回：
- *      满足约束条件的节点指针
+ *      满足约束条件的节点（数据结构用指针表示）
  * 
  * @date 2019-11-20
  */
@@ -21,9 +21,9 @@
 
 using namespace HybridAStar;
 
-//原始A*算法
+//原始A*算法，用来搜索计算 holonomic-with-obstacles heuristic
 float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
-//更新到目标点的代价
+//计算start到目标点goal的启发式代价(即：cost-to-go)
 void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
 //Dubins shot的路径
 Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
@@ -34,6 +34,9 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
 /*!
    \brief A structure to sort nodes in a heap structure
 */
+/**
+ * 重载运算符，用来生成节点的比较 逻辑，該函數在“boost::heap::compare<CompareNodes>”获得使用
+ */
 struct CompareNodes {
   /// Sorting 3D nodes by increasing C value - the total estimated cost
   bool operator()(const Node3D* lhs, const Node3D* rhs) const {
@@ -46,7 +49,8 @@ struct CompareNodes {
 };
 
 //###################################################
-//                                        3D A*
+//                       3D A*
+//  Hybrid A* 的主调用函数，输入参数的意义如该文件开始说明
 //###################################################
 Node3D* Algorithm::hybridAStar(Node3D& start,
                                const Node3D& goal,
@@ -75,7 +79,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
           > priorityQueue;
   priorityQueue O;//open集
 
-  // update h value: 计算到目标的启发值
+  // update h value: 计算到目标的启发式值
   updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
   // mark start as open
   start.open();//将start加入open 集合: 1)将点标记为open
@@ -173,7 +177,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
       O.pop();//并从open set中移除 (先取出点来，再干活)
 
       // _________
-      // GOAL TEST检测当前节点是否是终点或者是否超出了解算最大时间
+      // GOAL TEST检测当前节点是否是终点或者是否超出解算的最大时间(最大迭代次数)
       if (*nPred == goal || iterations > Constants::iterations) {
         // DEBUG
         return nPred;
@@ -182,10 +186,11 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
       // CONTINUE WITH SEARCH
       else {//不是目标点，那么就找到目标点的点
         // _______________________
-        // SEARCH WITH DUBINS SHOT//车子是在前进方向
+        // SEARCH WITH DUBINS SHOT//车子是在前进方向，优先考虑用Dubins去命中目标点
         if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 3) {
           nSucc = dubinsShot(*nPred, goal, configurationSpace);
-
+          
+          //如果Dubins方法能直接命中，即不需要进入Hybrid A*搜索了，直接返回结果
           if (nSucc != nullptr && *nSucc == goal) {
             //DEBUG
             // std::cout << "max diff " << max << std::endl;
@@ -204,7 +209,9 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
           iSucc = nSucc->setIdx(width, height);//索引值
 
           // ensure successor is on grid and traversable：确保是在有效范围内
-          // 判断扩展节点是否满足约束，能否进行遍历
+          // 判断扩展节点是否满足约束，能则继续进行遍历
+          // 首先判断产生的节点是否在范围内；其次判断产生的节点会不会产生碰撞；
+          // 只有同时满足在可视范围内且不产生碰撞的节点才是合格的节点
           if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc)) {
 
             // ensure successor is not on closed list or it has the same index as the predecessor
@@ -212,15 +219,16 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
             if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
 
               // calculate new G value：更新cost-so-far
-              // 更新G值
+              // 更新合格点的G值
               nSucc->updateG();
               newG = nSucc->getG();
 
               // if successor not on open list or found a shorter way to the cell
-              // 如果扩展节点不在OPEN LIST中，或者找到了更短G值的路径
+              // 如果扩展节点不在OPEN LIST中，或者找到了更短G值的路径，或者该节点索引与前一节点在同一网格中（用新点代替旧点）
+              // 则进入更新新点的属性：cost-to-go，
               if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
-                // calculate H value:更新cost-to-go
+                // calculate H value: 更新cost-to-go
                 updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
 
                 // if the successor is in the same cell but the C value is larger
@@ -229,6 +237,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
                   continue;
                 }
                 // if successor is in the same cell and the C value is lower, set predecessor to predecessor of predecessor
+                // 如果下一节点仍在相同的cell, 但是代价值要小，则用当前successor替代前一个节点（这里仅更改指针，数据留在内存中）
                 else if (iPred == iSucc && nSucc->getC() <= nPred->getC() + Constants::tieBreaker) {
                   nSucc->setPred(nPred->getPred());//如果下一个点仍在相同的cell、并且cost变小，成功
                 }
@@ -239,7 +248,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 
                 // put successor on open list
                 nSucc->open();
-                nodes3D[iSucc] = *nSucc;
+                nodes3D[iSucc] = *nSucc;//将生成的子节点加入到open list中
                 O.push(&nodes3D[iSucc]);
                 delete nSucc;
               } else { delete nSucc; }
@@ -258,7 +267,8 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 }
 
 //###################################################
-//                                        2D A*
+//                2D A*
+// 原始A*算法，返回start到goal的cost-so-far
 //###################################################
 float aStar(Node2D& start,
             Node2D& goal,
@@ -355,7 +365,7 @@ float aStar(Node2D& start,
             newG = nSucc->getG();
 
             // if successor not on open list or g value lower than before put it on open list
-            // 如果子节点并在open集中，或者它的G值比之前要小，则为可行的方向
+            // 如果子节点并在open集中，或者它的G值(cost-so-far)比之前要小，则为可行的方向
             if (!nodes2D[iSucc].isOpen() || newG < nodes2D[iSucc].getG()) {
               // calculate the H value
               nSucc->updateH(goal);//计算H值
@@ -378,8 +388,20 @@ float aStar(Node2D& start,
 //###################################################
 //                                         COST TO GO
 //###################################################
-// 计算到目标的cost
-void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height,
+// 计算到目标的启发值(cost)
+// 这里的cost由三项组成：《Practical Search Techniques in Path Planning for Autonomous Driving》
+// 1) "non-holonomic-without-obstacles" heuristic:（用于指导搜索向目标方向前进）
+//    受运动学约束的无障碍启发式值。论文的计算建议为： max(Reed-Shepp距离/Dubins距离, 欧氏距离) 表示
+//    至于用Reed-Shepp距离还是Dubins距离取决于车辆是否可倒退
+// 2) "holonomic-with-obstacles" heuristic：（用于发现U形转弯(U-shaped obstacles)/死路(dead-ends)）
+//    （不受运动学约束的）有障约束启发式值(即：A*)
+// 注1： 实际计算时，优先考虑运动学启发式值，A*作为可选项。至于是否启用欧氏距离和A*的启发式值，取决于计算
+//      的精度和CPU性能（可作为调优手段之一）
+// 注2： 实际计算与论文中的描述存在差异：
+//      （1）实际计算的第一步用的启发式值为“Reed-Shepp距离/Dubins距离”，而论文为“max(Reed-Shepp距离/Dubins距离, 欧氏距离)”
+//      （2）实际计算的第二步用的启发式值为A*的启发式值 减去 “start与goal各自相对自身所在2D网格的偏移量(二维向量)的欧氏距离”
+//          该步计算的意义还需仔细分析，目前我还没想明白代码这样设计的理由。
+void  updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height,
  CollisionDetection& configurationSpace, Visualize& visualization) {
   float dubinsCost = 0;
   float reedsSheppCost = 0;
@@ -484,18 +506,23 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
 
   if (Constants::twoD) {
     // offset for same node in cell
-    twoDoffset = sqrt(((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) * ((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) +
-                      ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())) * ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())));
+    twoDoffset = sqrt( ((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) * 
+                       ((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) +
+                       ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())) * 
+                       ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY()))
+                      );
     twoDCost = nodes2D[(int)start.getY() * width + (int)start.getX()].getG() - twoDoffset;
+    //getG()返回A*的启发式代价，twoDoffset为 start与goal各自相对自身所在2D网格的偏移量的欧氏距离
 
   }
 
   // return the maximum of the heuristics, making the heuristic admissable
-  start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));//三个代价中的最大值作为启发式值
+  start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));//将两个代价中的最大值作为启发式值
+  //注：虽然这里有三个数值，但Dubins Cost的启用和Reeds-Shepp Cost的启用是互斥的，所以实际上是计算两种cost而已
 }
 
 //###################################################
-//                                        DUBINS SHOT
+//                    DUBINS SHOT
 //###################################################
 Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
   // start
@@ -513,7 +540,7 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
 
   Node3D* dubinsNodes = new Node3D [(int)(length / Constants::dubinsStepSize) + 1];
 
-  while (x <  length) {
+  while (x <  length) {//这是跳出循环的条件之一：生成的路径没有达到所需要的长度
     double q[3];
     dubins_path_sample(&path, x, q);
     dubinsNodes[i].setX(q[0]);
@@ -521,6 +548,7 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
     dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
 
     // collision check
+    //跳出循环的条件之二：生成的路径存在碰撞节点
     if (configurationSpace.isTraversable(&dubinsNodes[i])) {
 
       // set the predecessor to the previous step
@@ -541,9 +569,10 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
       // delete all nodes
       delete [] dubinsNodes;
       return nullptr;
-    }
+    } 
   }
 
   //  std::cout << "Dubins shot connected, returning the path" << "\n";
+  //返回末节点，通过getPred()可以找到前一节点。
   return &dubinsNodes[i - 1];
 }

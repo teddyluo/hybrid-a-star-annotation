@@ -50,7 +50,8 @@ bool Node3D::isInRange(const Node3D& goal) const {
 
 //###################################################
 //                                   CREATE SUCCESSOR
-// 产生Successor
+// 根据dx, dy, dt产生Successor,
+// 当前源码的dx, dy, dt为人为指定的值，可以根据实际需要进行修改
 //###################################################
 Node3D* Node3D::createSuccessor(const int i) {
   float xSucc;

@@ -50,7 +50,8 @@ class CollisionDetection {
      \return true if it is traversable, else false
   */
   template<typename T> 
-  bool isTraversable(const T* node) {//可通行性检验：1) 标准方法：使用空间占据计算检查；2) 其他：使用2D代价地图和导航器检查
+  bool isTraversable(const T* node) {
+    //可通行性检验：1) 标准方法：使用空间占据计算检查；2) 其他：使用2D代价地图和导航器检查
     /* Depending on the used collision checking mechanism this needs to be adjusted
        standard: collision checking using the spatial occupancy enumeration
        other: collision checking using the 2d costmap and the navigation stack

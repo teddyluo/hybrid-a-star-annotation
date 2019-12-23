@@ -1,3 +1,10 @@
+/**  FILE: dubins.cpp
+ * @brief Dubins路径生成类的实现，用于生成向前行走的轨迹
+ * 注：Dubins路径是基础中的基础，扩展的Reeds-Shepp路径是Dubins路径的扩展（包括后退方向）
+ *    Dubins路径遵循车辆运动学约束。这里使用的代码直接采用Andrew Walker编写的Dubins类：
+ *  https://github.com/AndrewWalker/Dubins-Curves/
+ */
+
 // Copyright (c) 2008-2014, Andrew Walker
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -53,6 +60,7 @@ const int DIRDATA[][3] = {
 };
 
 //函数指针数组，可以指向不同的函数
+//原型为 typedef int (*DubinsWord)(double, double, double, double* );
 DubinsWord dubins_words[] = {
     dubins_LSL,
     dubins_LSR,
@@ -62,6 +70,7 @@ DubinsWord dubins_words[] = {
     dubins_LRL,
 };
 
+//这里定义宏展开，方便简化代码
 #define UNPACK_INPUTS(alpha, beta)     \
     double sa = sin(alpha);            \
     double sb = sin(beta);             \
@@ -69,6 +78,7 @@ DubinsWord dubins_words[] = {
     double cb = cos(beta);             \
     double c_ab = cos(alpha - beta);   \
 
+//定义宏展开，方便简化代码
 #define PACK_OUTPUTS(outputs)       \
     outputs[0]  = t;                \
     outputs[1]  = p;                \
@@ -80,7 +90,7 @@ DubinsWord dubins_words[] = {
  * fmod doesn't behave correctly for angular quantities, this function does
  */
 /**
- * 取浮点数的小数部分
+ * 两浮点数取模
  */
 double fmodr( double x, double y)
 {
@@ -100,11 +110,12 @@ double mod2pi( double theta )
 
 /**
  * @brief 根据alpha, beta, d三个参数找出Dubins类型(LSL, LSR, RSL, RSR, RLR or LRL)
- *        并将每段曲线的代价存放到path->param和path->type中
+ *        并将每段曲线的线段长度（代价）存放到path->param和path->type中
+ *       注：这是一种简单的穷举尝试策略，与文章“Classification of the Dubins set”描述的策略不同。
  * 
- * @param alpha ：角度参数
- * @param beta ：角度参数
- * @param d ：两个圆的距离
+ * @param alpha ：角度参数，表示起点朝向
+ * @param beta ：角度参数，表示终点朝向
+ * @param d ：起点和终点的距离
  * @param path 存放结果，用到两个: path->param和path->type
  * @return int 返回值：非0值表示出错；0表示正常
  */
@@ -120,7 +131,7 @@ int dubins_init_normalised( double alpha, double beta, double d, DubinsPath* pat
         //分别调用不同的Dubins函数曲线计算得到t,p, q,存放于params
         int err = dubins_words[i](alpha, beta, d, params);
         if(err == EDUBOK) {
-            double cost = params[0] + params[1] + params[2];//三段的计算代价
+            double cost = params[0] + params[1] + params[2];//三段线段的长度作为代价
             if(cost < best_cost) {//将最好的结果保存到path->param看
                 best_word = i;
                 best_cost = cost;
@@ -154,17 +165,17 @@ int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path )
     double dx = q1[0] - q0[0];
     double dy = q1[1] - q0[1];
     double D = sqrt( dx * dx + dy * dy );
-    double d = D / rho;
+    double d = D / rho;//将两点距离除以最小转弯半径得到归一化距离d
     if( rho <= 0. ) {
         return EDUBBADRHO;
     }
     double theta = mod2pi(atan2( dy, dx ));
     double alpha = mod2pi(q0[2] - theta);
-    double beta  = mod2pi(q1[2] - theta);
-    for( i = 0; i < 3; i ++ ) {
+    double beta  = mod2pi(q1[2] - theta);//计算坐标原点移到第一个点后，始点和终点的朝向
+    for( i = 0; i < 3; i ++ ) {//将起点放入path->qi变量
         path->qi[i] = q0[i];
     }
-    path->rho = rho;
+    path->rho = rho;//最小转弯半径
 
     return dubins_init_normalised( alpha, beta, d, path );
 }
@@ -296,18 +307,18 @@ int dubins_path_type( DubinsPath* path ) {
 void dubins_segment( double t, double qi[3], double qt[3], int type)
 {
     assert( type == L_SEG || type == S_SEG || type == R_SEG );
-
-    if( type == L_SEG ) {
+    //Shkel A M, Lumelsky V. Classification of the Dubins set[J]. Robotics and Autonomous Systems, 2001, 34(4): 179-202.
+    if( type == L_SEG ) {//公式 (1)的第一个式子，此处经过归一化后v=1
         qt[0] = qi[0] + sin(qi[2]+t) - sin(qi[2]);
         qt[1] = qi[1] - cos(qi[2]+t) + cos(qi[2]);
         qt[2] = qi[2] + t;
     }
-    else if( type == R_SEG ) {
+    else if( type == R_SEG ) {//公式(1)的第二个式子，此处经过归一化后v=1
         qt[0] = qi[0] - sin(qi[2]-t) + sin(qi[2]);
         qt[1] = qi[1] + cos(qi[2]-t) - cos(qi[2]);
         qt[2] = qi[2] - t;
     }
-    else if( type == S_SEG ) {
+    else if( type == S_SEG ) {//公式(1)的第三个式子，此处经过归一化后v=1
         qt[0] = qi[0] + cos(qi[2]) * t;
         qt[1] = qi[1] + sin(qi[2]) * t;
         qt[2] = qi[2];
@@ -315,11 +326,11 @@ void dubins_segment( double t, double qi[3], double qt[3], int type)
 }
 
 /**
- * @brief 对一段路径进行采样
+ * @brief 对一段路径进行采样(根据路径长度t和路径参数path,生成长度为t的节点的位置)
  * 
- * @param path 输入路径
- * @param t 路径终点的t
- * @param q 采样结果
+ * @param path 输入路径参数
+ * @param t 路径长度t
+ * @param q 采样结果(线段终点的位置)
  * @return int 返回值：非0表示出错，0表示正常
  */
 int dubins_path_sample( DubinsPath* path, double t, double q[3] )
@@ -347,15 +358,15 @@ int dubins_path_sample( DubinsPath* path, double t, double q[3] )
     double qi[3] = { 0, 0, path->qi[2] };
 
     // Generate the target configuration
-    // 生成中间点的构型
+    // 生成中间点的位置
     const int* types = DIRDATA[path->type];
     double p1 = path->param[0];//路径的第一个角度
     double p2 = path->param[1];//路径的第二个角度
     double q1[3]; // end-of segment 1
     double q2[3]; // end-of segment 2
-    //从第qi点为起点，根据类型types[0]，生成后一个点q1的configuration
+    //从第qi点为起点，根据类型types[0]，生成后一个点q1的configuration（即计算下一个节点的位置）
     dubins_segment( p1,      qi,    q1, types[0] );
-    //从第q1点为起点，根据类型types[1]，生成后一个点q2的configuration
+    //从第q1点为起点，根据类型types[1]，生成后一个点q2的configuration（即计算下一个节点的位置）
     dubins_segment( p2,      q1,    q2, types[1] );
     //生成q点的configuration
     if( tprime < p1 ) {
@@ -371,11 +382,20 @@ int dubins_path_sample( DubinsPath* path, double t, double q[3] )
     // scale the target configuration, translate back to the original starting point
     q[0] = q[0] * path->rho + path->qi[0];
     q[1] = q[1] * path->rho + path->qi[1];
-    q[2] = mod2pi(q[2]);
+    q[2] = mod2pi( q[2] );
 
     return 0;
 }
 
+/**
+ * @brief 通过回调函数多次调用dubins_path_sample
+ * 
+ * @param path 
+ * @param cb 
+ * @param stepSize 
+ * @param user_data 
+ * @return int 
+ */
 int dubins_path_sample_many( DubinsPath* path, DubinsPathSamplingCallback cb, double stepSize, void* user_data )
 {
     double x = 0.0;
@@ -392,12 +412,27 @@ int dubins_path_sample_many( DubinsPath* path, DubinsPathSamplingCallback cb, do
     return 0;
 }
 
+/**
+ * @brief 根据路径参数path, 返回线段末节点参数
+ * 
+ * @param path 
+ * @param q 
+ * @return int 
+ */
 int dubins_path_endpoint( DubinsPath* path, double q[3] )
 {
     // TODO - introduce a new constant rather than just using EPSILON
     return dubins_path_sample( path, dubins_path_length(path) - EPSILON, q );
 }
 
+/**
+ * @brief 将一段路径path，按路径长度t，划分为多个子线段。
+ * 
+ * @param path 输入的路径
+ * @param t 子线段长度
+ * @param newpath 生成的新的路径
+ * @return int 
+ */
 int dubins_extract_subpath( DubinsPath* path, double t, DubinsPath* newpath )
 {
     // calculate the true parameter

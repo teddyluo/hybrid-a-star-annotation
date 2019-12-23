@@ -243,6 +243,10 @@ void Planner::plan() {
 
     delete [] nodes3D;
     delete [] nodes2D;
+    //注：这里的nSolution是new出来的，应该在用完后删除
+    //(下面增加的两句待验证)
+    if(nSolution)
+        delete [] nSolution;
 
   } else {
     std::cout << "missing goal or start" << std::endl;
